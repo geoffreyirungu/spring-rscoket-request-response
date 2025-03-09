@@ -154,10 +154,10 @@ Below are the steps of switching:
 
 1. Add WebFlux starter dependency:
 
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-webflux</artifactId>
-	</dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
 
 2. Specify you want to use web socket transport in the configuration by setting spring.rsocket.server.   transport. Also set the Http path that the Rsocket communication will take place on by setting spring.rsocket.server.mapping-path
 
