@@ -1,7 +1,7 @@
 # READ ME
 I did this project as part of the spring in action 6th edition book.
 
-The main takeaway of this project is using RSocket for inter-application communication:
+The main takeaways of this project centers around using RSocket for inter-application communication:
 * Reactive network communication with RSocket
 * Working with each of RSocket four communication models
 * Transporting RScoket over WebSocket
@@ -34,116 +34,116 @@ To create an Rsocket project using the communication models, follow these steps:
 2. Define controllers and their respective methods:
 
     ## Request-Response controller example
-    @Controller
-    @Slf4j
-    public class GreetingController {
-        
-        @MessageMapping("greeting")
-        public Mono<String> handleGreeting(Mono<String> greetingMono){
-            return greetingMono
-                    .doOnNext(greeting -> log.info("Received greeting: {}",greeting))
-                    .map(greeting -> "Hello back to you!");
-        }
+        @Controller
+        @Slf4j
+        public class GreetingController {
+            
+            @MessageMapping("greeting")
+            public Mono<String> handleGreeting(Mono<String> greetingMono){
+                return greetingMono
+                        .doOnNext(greeting -> log.info("Received greeting: {}",greeting))
+                        .map(greeting -> "Hello back to you!");
+            }
 
-        @MessageMapping("greeting/{name}")
-        public Mono<String> handleGreeting(@DestinationVariable("name") String name,Mono<String> greetingMono){
-            return greetingMono
-                    .doOnNext(greeting -> log.info("Received greeting: {}",greeting))
-                    .map(greeting -> "Hello "+name);
-        }
+            @MessageMapping("greeting/{name}")
+            public Mono<String> handleGreeting(@DestinationVariable("name") String name,Mono<String> greetingMono){
+                return greetingMono
+                        .doOnNext(greeting -> log.info("Received greeting: {}",greeting))
+                        .map(greeting -> "Hello "+name);
+            }
 
-    }
+        }
 
     ## Request-Stream controller example
-    @Controller
-    public class StockQuoteController {
-        
-        @MessageMapping("stock/{symbol}")
-        public Flux<StockQuote> getStockPrice(@DestinationVariable("symbol") String symbol){
-            return Flux
-                    .interval(Duration.ofSeconds(1))
-                    .map(i -> {
-                        BigDecimal price = BigDecimal.valueOf(Math.random() * 10);
-                        return new StockQuote(symbol,price,Instant.now());
-                    });
-        }
+        @Controller
+        public class StockQuoteController {
+            
+            @MessageMapping("stock/{symbol}")
+            public Flux<StockQuote> getStockPrice(@DestinationVariable("symbol") String symbol){
+                return Flux
+                        .interval(Duration.ofSeconds(1))
+                        .map(i -> {
+                            BigDecimal price = BigDecimal.valueOf(Math.random() * 10);
+                            return new StockQuote(symbol,price,Instant.now());
+                        });
+            }
 
-    }
+        }
 
     ## Fire and Forget controller example
-    @Controller
-    public class AlertController {
-        
-        @MessageMapping("alert")
-        public Mono<Void> setAlert(Mono<Alert> alertMono){
-            return alertMono
-                    .doOnNext(alert -> log.info("{} ordered by {} at {}",alert.getLevel(),alert.getOrderedBy(),alert.getOrderedAt()))
-                    .thenEmpty(Mono.empty());
-        }
+        @Controller
+        public class AlertController {
+            
+            @MessageMapping("alert")
+            public Mono<Void> setAlert(Mono<Alert> alertMono){
+                return alertMono
+                        .doOnNext(alert -> log.info("{} ordered by {} at {}",alert.getLevel(),alert.getOrderedBy(),alert.getOrderedAt()))
+                        .thenEmpty(Mono.empty());
+            }
 
-    }
+        }
 
     ## Request channel controller example
-    public class GratuityController {
-    
-        @MessageMapping("gratuity")
-        public Flux<GratuityOut> calculate(Flux<GratuityIn> gratuityInFlux){
-            return gratuityInFlux
-                    .doOnNext(in -> log.info("Calculating gratuity: {}",in))
-                    .map(in -> {
-                        double percentAsDecimal = in.getPercent() / 100.0;
-                        BigDecimal gratuity = in.getBillTotal().multiply(BigDecimal.valueOf(percentAsDecimal));
-                        return new GratuityOut(in.getBillTotal(),in.getPercent(),gratuity);
-                    });
-        }
+        public class GratuityController {
+        
+            @MessageMapping("gratuity")
+            public Flux<GratuityOut> calculate(Flux<GratuityIn> gratuityInFlux){
+                return gratuityInFlux
+                        .doOnNext(in -> log.info("Calculating gratuity: {}",in))
+                        .map(in -> {
+                            double percentAsDecimal = in.getPercent() / 100.0;
+                            BigDecimal gratuity = in.getBillTotal().multiply(BigDecimal.valueOf(percentAsDecimal));
+                            return new GratuityOut(in.getBillTotal(),in.getPercent(),gratuity);
+                        });
+            }
 
-    }
+        }
 
 3. Configure the RSocket server:
 
-    spring:
-        rsocket:
-            server:
-                port: 7000
+        spring:
+            rsocket:
+                server:
+                    port: 7000
 
 4. Create an RSocket client and send messages:
 
-    @Bean
-	public ApplicationRunner sender(RSocketRequester.Builder requesterBuilder){
-		return args -> {
-			RSocketRequester tcp = requesterBuilder.tcp("localhost", 7000);
+        @Bean
+        public ApplicationRunner sender(RSocketRequester.Builder requesterBuilder){
+            return args -> {
+                RSocketRequester tcp = requesterBuilder.tcp("localhost", 7000);
 
-            // Request-Response client examples
-			tcp.route("greeting")
-				.data("Hello Rsocket!")
-				.retrieveMono(String.class)
-				.subscribe(response -> log.info("Got a response: {}",response));
+                // Request-Response client examples
+                tcp.route("greeting")
+                    .data("Hello Rsocket!")
+                    .retrieveMono(String.class)
+                    .subscribe(response -> log.info("Got a response: {}",response));
 
-			tcp.route("greeting/{name}", "Jeff")
-				.data("Hello Rsocket!")
-				.retrieveMono(String.class)
-				.subscribe(response -> log.info("Got a response: {}",response));
+                tcp.route("greeting/{name}", "Jeff")
+                    .data("Hello Rsocket!")
+                    .retrieveMono(String.class)
+                    .subscribe(response -> log.info("Got a response: {}",response));
 
-            // Request-Stream client example
-            tcp.route("stock/{symbol}","xyz")
-				.retrieveFlux(StockQuote.class)
-				.doOnNext(stockQuote -> log.info("Price of {}: {} at {}",stockQuote.getSymbol(),stockQuote.getPrice(),stockQuote.getPrice()))
-				.subscribe();
+                // Request-Stream client example
+                tcp.route("stock/{symbol}","xyz")
+                    .retrieveFlux(StockQuote.class)
+                    .doOnNext(stockQuote -> log.info("Price of {}: {} at {}",stockQuote.getSymbol(),stockQuote.getPrice(),stockQuote.getPrice()))
+                    .subscribe();
 
-            //Fire and Forget client example
-			tcp.route("alert")
-				.data(new Alert(Alert.Level.RED,"C-3PO",Instant.now()))
-				.send() // instead of retrieveMono or retrieveFlux
-				.subscribe();
+                //Fire and Forget client example
+                tcp.route("alert")
+                    .data(new Alert(Alert.Level.RED,"C-3PO",Instant.now()))
+                    .send() // instead of retrieveMono or retrieveFlux
+                    .subscribe();
 
-            // Request channel client example
-			tcp.route("gratuity")
-				.data(gratuityInFlux)
-				.retrieveFlux(GratuityOut.class)
-				.subscribe(out -> log.info("{}% gratuity on {} is {}",out.getPercent(),out.getBillTotal(),out.getGratuity()));
+                // Request channel client example
+                tcp.route("gratuity")
+                    .data(gratuityInFlux)
+                    .retrieveFlux(GratuityOut.class)
+                    .subscribe(out -> log.info("{}% gratuity on {} is {}",out.getPercent(),out.getBillTotal(),out.getGratuity()));
 
-		};
-	}
+            };
+        }
 
 
 ## Transport RSocket over WebSocket
