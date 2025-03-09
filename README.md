@@ -161,18 +161,18 @@ Below are the steps of switching:
 
 2. Specify you want to use web socket transport in the configuration by setting spring.rsocket.server.   transport. Also set the Http path that the Rsocket communication will take place on by setting spring.rsocket.server.mapping-path
 
-    spring:
-        rsocket:
-            server:
-                transport: websocket
-                mapping-path: /rsocket
+        spring:
+            rsocket:
+                server:
+                    transport: websocket
+                    mapping-path: /rsocket
 
     NB: unlike tcp transport which communicates over a specific port, the websocket transport works over a specific http path. Thus there is no need to set spring.rsocket.server.port as with Rsocket over TCP.
 
 3. On the client side rather than create a tcp based requester you create a websocket based requester by calling websocket() method on RSocketRequester.Builder:
 
-    RSocketRequester requester = requesterBuilder.websocket(URI.create("ws://localhost:8080/rsocket"));
-    requester.route("greeting")
-				.data("Hello Rsocket!")
-				.retrieveMono(String.class)
-				.subscribe(response -> log.info("Got a response: {}",response));
+        RSocketRequester requester = requesterBuilder.websocket(URI.create("ws://localhost:8080/rsocket"));
+        requester.route("greeting")
+                    .data("Hello Rsocket!")
+                    .retrieveMono(String.class)
+                    .subscribe(response -> log.info("Got a response: {}",response));
